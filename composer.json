@@ -1,0 +1,18 @@
+{
+    "name": "1725/elearning",
+    "autoload": {
+        "psr-4": {
+            "1725\\Elearning\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Kuat Dwi Prasetiyo",
+            "email": "Kuat.Dwi.Prasetiyo@bni.co.id"
+        }
+    ],
+    "require": {
+        "tecnickcom/tcpdf": "^6.8",
+        "phpoffice/phpexcel": "^1.8"
+    }
+}

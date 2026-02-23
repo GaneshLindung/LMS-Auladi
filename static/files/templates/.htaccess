@@ -1,0 +1,27 @@
+# 1. Blokir semua akses secara default
+<IfModule authz_core_module>
+    Require all denied
+</IfModule>
+<IfModule !authz_core_module>
+    Deny from all
+</IfModule>
+
+# 2. Izinkan file PDF, PPTX, XLSX, dan DOCX
+<FilesMatch "\.(pdf|pptx|xlsx|docx)$">
+    <IfModule authz_core_module>
+        Require all granted
+    </IfModule>
+    <IfModule !authz_core_module>
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
+# 3. Izinkan file PHP yang mengandung kata "parsing"
+<FilesMatch "parsing.*\.php$">
+    <IfModule authz_core_module>
+        Require all granted
+    </IfModule>
+    <IfModule !authz_core_module>
+        Allow from all
+    </IfModule>
+</FilesMatch>
