@@ -108,42 +108,144 @@
                     border: 1px solid var(--blue);
                 }
 
+                .pagination .page-link {
+                    color: #ff8a2a;
+                }
+
+                .video-pagination-wrapper {
+                    display: flex;
+                    justify-content: center;
+                    margin-top: -0.25rem;
+                    margin-bottom: 2rem;
+                }
+
+                .video-pagination-wrapper .pagination {
+                    margin-bottom: 0;
+                    gap: 8px;
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    background: #fff;
+                    border: 1px solid #e8edf5;
+                    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .video-pagination-wrapper .page-item.disabled .page-link {
+                    color: #9aa0ac;
+                    pointer-events: none;
+                    background-color: #f8fafc;
+                    border-color: #edf2f7;
+                }
+
+                .video-pagination-wrapper .page-item {
+                    margin: 0;
+                }
+
+                .video-pagination-wrapper .page-item + .page-item .page-link {
+                    margin-left: 0;
+                }
+
+                .video-pagination-wrapper .page-link {
+                    min-width: 40px;
+                    height: 40px;
+                    padding: 0 12px;
+                    margin: 0 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 10px !important;
+                    border: 1px solid #dfe7f3;
+                    color: #f47b20;
+                    font-weight: 600;
+                    transition: all .2s ease-in-out;
+                }
+
+                .video-pagination-wrapper .page-link:hover {
+                    color: #d36512;
+                    border-color: #f47b20;
+                    background: #fff2e8;
+                    text-decoration: none;
+                }
+
+                .video-pagination-wrapper .page-item.active .page-link {
+                    color: #fff;
+                    background: linear-gradient(180deg, #ffa64d 0%, #f47b20 100%);
+                    border-color: #f47b20;
+                    box-shadow: 0 6px 14px rgba(244, 123, 32, 0.30);
+                }
+
                 @media (max-width: 768px) {
-                    .pagination {overflow-x: scroll;}
+                    .pagination {overflow-x: auto;}
+                    .video-pagination-wrapper .pagination {
+                        gap: 6px;
+                        padding: 8px;
+                    }
+
+                    .video-pagination-wrapper .page-link {
+                        min-width: 34px;
+                        height: 34px;
+                        padding: 0 10px;
+                        margin: 0 4px;
+                        font-size: 14px;
+                        border-radius: 8px !important;
+                    }
                 }
             </style>
             <div class="grid grid-4" style="margin: 20px 0px 5px;">
             <?Php
                 $LIMIT = 8;
-                if(isset($_GET['subject_id'])) {
-                    if(isset($video['mapel'][$_GET['subject_id']])) {
-                        $OBX = $video['mapel'][$_GET['subject_id']];
-                        $XLS = implode(",", $OBX);
-                        $GET = query("video_d","WHERE video_id IN ($XLS) ORDER BY id DESC");
-                        $GND = query("video_d","WHERE video_id IN ($XLS) ORDER BY id ASC LIMIT 1");
-                    }
+                $page = isset($_GET['page']) && (int)$_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+                $subjectId = isset($_GET['subject_id']) ? (int)$_GET['subject_id'] : null;
+                $videoIds = [];
+                $eligibleVideoIds = [];
+                $HITUNG = 0;
+                $totalPages = 1;
+                $basePaginationUrl = "?";
+                if ($subjectId !== null && $subjectId > 0) {
+                    $basePaginationUrl = "?subject_id=".$subjectId;
+                }
+                $paginationSeparator = $subjectId !== null && $subjectId > 0 ? "&" : "";
+
+                if ($subjectId !== null && $subjectId > 0 && isset($video['mapel'][$subjectId])) {
+                    $videoIds = $video['mapel'][$subjectId];
                 } else {
-                    if(isset($_GET['page']) && $_GET['page'] > 1) {
-                        $P = $_GET['page']; $PX = ($P * $LIMIT) - $LIMIT;
-                        $GET = query("video_d","GROUP BY video_id ORDER BY id DESC LIMIT $PX, $LIMIT");
-                        $GND = query("video_d","GROUP BY video_id ORDER BY id ASC LIMIT 1");
-                    } else {
-                        $GET = query("video_d","GROUP BY video_id ORDER BY id DESC LIMIT $LIMIT");
-                        $GND = query("video_d","GROUP BY video_id ORDER BY id ASC LIMIT 1");
-                    }   
+                    $GET = query("video", "ORDER BY ID DESC");
+                    if ($GET) {
+                        while($dtx = mysqli_fetch_array($GET)) {
+                            if (!in_array($dtx['ID'], $videoIds)) {
+                                $videoIds[] = $dtx['ID'];
+                            }
+                        }
+                    }
                 }
 
-                $last = false;
-                $end = mysqli_fetch_array($GND);
-                $eid = $end['ID'];
-                
-                if(isset($GET)) {
-                    $DX = []; $HITUNG = 0;
-                    while($dtx = mysqli_fetch_array($GET)) {
-                        if (isset($video['data'][$dtx['video_id']]) && !in_array($dtx['video_id'], $DX)) {
-                            $DX[] = $dtx['video_id'];
-                            $data = $video['data'][$dtx['video_id']];
-                            if (in_array($data['subject_id'], $siswa[$user['username']]['ekskul']) || in_array($myclass, $data['classes'])) { ?>
+                foreach ($videoIds as $videoId) {
+                    if (isset($video['data'][$videoId])) {
+                        $videoData = $video['data'][$videoId];
+                        if (in_array($videoData['subject_id'], $siswa[$user['username']]['ekskul']) || in_array($myclass, $videoData['classes'])) {
+                            $eligibleVideoIds[] = $videoId;
+                        }
+                    }
+                }
+
+                $totalData = count($eligibleVideoIds);
+                if ($totalData > 0) {
+                    $totalPages = ceil($totalData / $LIMIT);
+                }
+                if ($page > $totalPages) {
+                    $page = $totalPages;
+                }
+                if ($page < 1) {
+                    $page = 1;
+                }
+
+                $offset = ($page - 1) * $LIMIT;
+                $paginatedVideoIds = array_slice($eligibleVideoIds, $offset, $LIMIT);
+
+                if(count($paginatedVideoIds) > 0) {
+                    foreach($paginatedVideoIds as $videoId) {
+                        $data = $video['data'][$videoId]; ?>
                         <div class="video card" data-mapel="<?= $data['subject_id'] ?>" data-bab="<?= $data['bab'] ?>">
                             <div class="header">
                                 <h5 class="card-title"><?= $data['title'] ?></h5>
@@ -158,28 +260,67 @@
                                 </div>
                             </div>
                         </div> <?php
-                            $HITUNG++; }
-
-                            if ($dtx['ID'] == $eid) {$last = true;}
-                        }
+                        $HITUNG++;
                     }
                 } else {
                     echo "- Tidak ditemukan apapun -";
                 }
             ?>
             </div>
-            <div class="d-flex" style="justify-content: space-between;">
-                <div>
-                    <?php if(isset($_GET['page']) && $_GET['page'] > 1) { $px = $_GET['page'] > 1 ? $_GET['page'] - 1 : $_GET['page'] + 1; ?>
-                        <a href="?page=<?= $px ?>" class="btn btn-sm btn-primary" type="button">< Prev</a>
-                    <?php } ?>
-                </div>
-                <div>
-                    <?php if(isset($data) && $HITUNG == $LIMIT && $last == false) { $px =  isset($_GET['page']) ? ($_GET['page'] + 1) : 2;?>
-                        <a href="?page=<?= $px ?>" class="btn btn-sm btn-primary" type="button">Next ></a>
-                    <?php } ?>
-                </div>
+            <?php if($totalPages > 1) {
+                $visiblePages = [];
+                $visiblePages[] = 1;
+                if($totalPages > 1) {
+                    $visiblePages[] = $totalPages;
+                }
+                for($i = $page - 1; $i <= $page + 1; $i++) {
+                    if($i > 1 && $i < $totalPages) {
+                        $visiblePages[] = $i;
+                    }
+                }
+                $visiblePages = array_unique($visiblePages);
+                sort($visiblePages);
+            ?>
+            <div class="video-pagination-wrapper">
+                <nav aria-label="Pagination video interaktif">
+                    <ul class="pagination">
+                        <?php if($page > 1) { $prev = $page - 1; ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= $basePaginationUrl.$paginationSeparator ?>page=<?= $prev ?>" aria-label="Halaman sebelumnya">&laquo;</a>
+                            </li>
+                        <?php } else { ?>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                            </li>
+                        <?php } ?>
+
+                        <?php
+                            $lastShownPage = 0;
+                            foreach($visiblePages as $i) {
+                                if($lastShownPage > 0 && ($i - $lastShownPage) > 1) { ?>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                <?php } ?>
+                            <li class="page-item <?= $i == $page ? "active" : "" ?>">
+                                <a class="page-link" href="<?= $basePaginationUrl.$paginationSeparator ?>page=<?= $i ?>"><?= $i ?></a>
+                            </li>
+                        <?php
+                                $lastShownPage = $i;
+                            }
+                        ?>
+
+                        <?php if($page < $totalPages) { $next = $page + 1; ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= $basePaginationUrl.$paginationSeparator ?>page=<?= $next ?>" aria-label="Halaman berikutnya">&raquo;</a>
+                            </li>
+                        <?php } else { ?>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                            </li>
+                        <?php } ?>
+                    </ul>
+                </nav>
             </div>
+            <?php } ?>
         </div>
     </div>
 </div>
