@@ -207,8 +207,12 @@
                 }
                 $paginationSeparator = $subjectId !== null && $subjectId > 0 ? "&" : "";
 
-                if ($subjectId !== null && $subjectId > 0 && isset($video['mapel'][$subjectId])) {
-                    $videoIds = $video['mapel'][$subjectId];
+                if ($subjectId !== null && $subjectId > 0) {
+                    if (isset($video['mapel'][$subjectId])) {
+                        $videoIds = $video['mapel'][$subjectId];
+                    } else {
+                        $videoIds = [];
+                    }
                 } else {
                     $GET = query("video", "ORDER BY ID DESC");
                     if ($GET) {
