@@ -4,11 +4,11 @@ date_default_timezone_set('Asia/Jakarta');
 $timestamp = $_SERVER['REQUEST_TIME'];
 
 if (!isset($_GET['logout'])) {
-    $conn = mysqli_connect("localhost", "sitaulad_lms", "adminauladi", "sitaulad_lms_jakabaring");
+    $conn = mysqli_connect("localhost", "root", "", "sitaulad_lms_jakabaring");
 
     $site = array(
         "year" => "2024/2025",
-        "base_url" => "https://lms-jakabaring.sitauladi.sch.id/",
+        "base_url" => "http://localhost/auladi-lms-testing/",
         "long_name" => "Pembelajaran Digital SIT Auladi Palembang",
         "shortname" => "SIT Auladi Palembang"
     );
