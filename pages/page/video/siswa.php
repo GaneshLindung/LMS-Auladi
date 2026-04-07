@@ -55,7 +55,13 @@
                     <?Php if(isset($_GET['subject_id'])) { ?>
                     <select name="pilih_bab" class="filtermateri form-select form-control shadow-none" data-change="bab">
                         <option value="all">Semua BAB</option>
-                        <?Php for($xx = 1; $xx <= 20; $xx ++) {echo "<option value='".$xx."'>BAB ".$xx."</option>";} ?>
+                        <?Php
+                            $selectedBab = isset($_GET['bab']) && (int)$_GET['bab'] > 0 ? (int)$_GET['bab'] : null;
+                            for($xx = 1; $xx <= 20; $xx ++) {
+                                $isSelectedBab = $selectedBab === $xx ? "selected" : "";
+                                echo "<option value='".$xx."' ".$isSelectedBab.">BAB ".$xx."</option>";
+                            }
+                        ?>
                     </select>
                     <?Php } ?>
                     <script>
@@ -75,18 +81,12 @@
                                     location.href = "?subject_id=" + mapel;
                                 }
                             } else if (chang == "bab") {
-                                if (bab == "all") {
-                                    if(mapel == "all") {
-                                        $(".video").show();
-                                    } else {
-                                        $(`.video[data-mapel=${mapel}]`).show();
-                                    }
+                                if(mapel == "all") {
+                                    location.href = "?";
+                                } else if (bab == "all") {
+                                    location.href = "?subject_id=" + mapel;
                                 } else {
-                                    if(mapel == "all") {
-                                        $(`.video[data-bab=${bab}]`).show();
-                                    } else {
-                                        $(`.video[data-mapel=${mapel}][data-bab=${bab}]`).show();
-                                    }
+                                    location.href = "?subject_id=" + mapel + "&bab=" + bab;
                                 }
                             }
                         });
@@ -127,8 +127,11 @@
                     background: #fff;
                     border: 1px solid #e8edf5;
                     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-                    flex-wrap: wrap;
+                    flex-wrap: nowrap;
                     justify-content: center;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    -webkit-overflow-scrolling: touch;
                 }
 
                 .video-pagination-wrapper .page-item.disabled .page-link {
@@ -176,7 +179,6 @@
                 }
 
                 @media (max-width: 768px) {
-                    .pagination {overflow-x: auto;}
                     .video-pagination-wrapper .pagination {
                         gap: 6px;
                         padding: 8px;
@@ -197,15 +199,20 @@
                 $LIMIT = 8;
                 $page = isset($_GET['page']) && (int)$_GET['page'] > 0 ? (int)$_GET['page'] : 1;
                 $subjectId = isset($_GET['subject_id']) ? (int)$_GET['subject_id'] : null;
+                $selectedBab = isset($_GET['bab']) && (int)$_GET['bab'] > 0 ? (int)$_GET['bab'] : null;
                 $videoIds = [];
                 $eligibleVideoIds = [];
                 $HITUNG = 0;
                 $totalPages = 1;
-                $basePaginationUrl = "?";
+                $basePaginationParams = [];
                 if ($subjectId !== null && $subjectId > 0) {
-                    $basePaginationUrl = "?subject_id=".$subjectId;
+                    $basePaginationParams['subject_id'] = $subjectId;
                 }
-                $paginationSeparator = $subjectId !== null && $subjectId > 0 ? "&" : "";
+                if ($selectedBab !== null) {
+                    $basePaginationParams['bab'] = $selectedBab;
+                }
+                $basePaginationUrl = empty($basePaginationParams) ? "?" : "?".http_build_query($basePaginationParams);
+                $paginationSeparator = empty($basePaginationParams) ? "" : "&";
 
                 if ($subjectId !== null && $subjectId > 0) {
                     if (isset($video['mapel'][$subjectId])) {
@@ -227,6 +234,9 @@
                 foreach ($videoIds as $videoId) {
                     if (isset($video['data'][$videoId])) {
                         $videoData = $video['data'][$videoId];
+                        if ($selectedBab !== null && (int)$videoData['bab'] !== $selectedBab) {
+                            continue;
+                        }
                         if (in_array($videoData['subject_id'], $siswa[$user['username']]['ekskul']) || in_array($myclass, $videoData['classes'])) {
                             $eligibleVideoIds[] = $videoId;
                         }
